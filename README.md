@@ -1,23 +1,30 @@
-# NEXUS ARCADE
+# NEXUS ARCADE — Public Game Library
 
-A clean, responsive personal game hub for GitHub Pages.
+## Publish the update
+1. Download and extract this ZIP.
+2. Open your GitHub repository named `nexus-arcade`.
+3. Choose **Add file → Upload files**.
+4. Upload `index.html` and `nexus_runner.html` from this folder. If GitHub asks whether to replace `index.html`, confirm the replacement.
+5. Click **Commit changes**.
+6. Wait a few minutes, then refresh your GitHub Pages website.
 
-## Publish on GitHub Pages
+## Add another game so every visitor can play it
+GitHub Pages is static hosting. A website cannot securely write new files into your GitHub repository just by using a browser upload button. To publish a new game for everyone:
 
-1. Sign in to GitHub and create a **new public repository** named `nexus-arcade`.
-2. Upload `index.html` to the top level of the repository (not inside another folder).
-3. Open the repository's **Settings → Pages**.
-4. Under **Build and deployment**, choose **Deploy from a branch**.
-5. Select branch `main` and folder `/ (root)`, then click **Save**.
-6. Wait a minute or two. GitHub will show your website URL in the Pages section.
+1. Upload the game's `.html` file to the same repository folder as `index.html`.
+2. Edit `index.html` on GitHub and add a card inside the `<section class="grid">` area. Example (change the name and file):
 
-## Add games
+```html
+<article class="game">
+  <div class="emoji">🎮</div>
+  <h3>My New Game</h3>
+  <p>A short description of the game.</p>
+  <a class="play" href="my-new-game.html" target="_blank" rel="noopener">PLAY NOW →</a>
+</article>
+```
 
-- On the website, click **Upload** and choose a single `.html` or `.htm` game file.
-- Those uploads are saved in that browser on that device using IndexedDB. They are not sent to GitHub and are not shared with other visitors.
-- To publish a game for everyone: upload its game files into a folder in this repository, then edit `index.html` to add a game entry that links to that folder. The current upload control is a personal/local library, not a server-side upload service.
+3. Commit the change. After Pages redeploys, the new card appears for everyone.
 
-## Notes
+The existing four mini-games are built into `index.html`; NEON DASH is included as `nexus_runner.html`.
 
-- This starter version accepts single-file HTML games. Games that need separate images, audio, JavaScript, or CSS files should be uploaded to the repository with their full folder structure and linked from the site.
-- Only upload games you own or have permission to distribute.
+**Note:** The `7245` entry screen is a casual front-end gate, not strong security. Anyone who can inspect the website files can discover or bypass it. Do not use it to protect private information.
