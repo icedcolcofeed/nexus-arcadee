@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Snack Rush | Nexus Arcade</title>
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;padding:20px;background:radial-gradient(circle at top,#49245f,#11152e 65%);color:#fff;font-family:system-ui,Arial,sans-serif;text-align:center}
+h1{margin:5px 0;color:#ffe477;font-size:clamp(2.2rem,7vw,3.6rem);text-shadow:0 0 20px #ffb43b77;letter-spacing:2px}
+.sub{color:#e4d8ff;margin:4px 0 15px}.hud{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:14px auto}.hud span{background:#ffffff18;border:1px solid #ffffff28;border-radius:12px;padding:9px 15px;font-weight:800}
+#status{min-height:28px;color:#7fffe1;font-weight:800;margin:10px}
+.restaurant{max-width:850px;margin:auto;background:#ffffff12;border:1px solid #ffffff25;border-radius:20px;padding:15px;box-shadow:0 15px 45px #0005}
+.customers{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;min-height:150px}
+.customer{width:145px;min-height:135px;background:#fff1;border:2px solid #ffffff25;border-radius:17px;padding:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;transition:.2s}
+.face{font-size:43px;line-height:1.1}.name{font-weight:800;color:#ffe9a5}.bubble{background:#fff;color:#302449;border-radius:13px;padding:6px 9px;font-size:21px;min-width:68px;min-height:36px;display:flex;align-items:center;justify-content:center}
+.bubble small{font-size:11px}.waiting{font-size:11px;color:#ffcfda}.bar{width:100%;height:7px;background:#ffffff25;border-radius:8px;overflow:hidden}.bar i{display:block;height:100%;width:100%;background:#75f0c3;transition:width .2s}
+.foodtitle{margin:17px 0 9px;color:#ffe477;font-weight:900;letter-spacing:1px}.foods{display:grid;grid-template-columns:repeat(auto-fit,minmax(95px,1fr));gap:9px;max-width:650px;margin:0 auto}
+.food{border:2px solid #ffffff28;border-radius:15px;background:#292447;color:white;padding:10px 5px;font-size:31px;cursor:pointer;touch-action:manipulation}.food b{display:block;font-size:13px}.food:active{transform:scale(.95);background:#59417b}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin:17px}.actions button{border:0;border-radius:12px;padding:12px 19px;font-weight:900;background:#ffe477;color:#302449;cursor:pointer;font-size:15px}.actions .secondary{background:#ffffff20;color:#fff;border:1px solid #ffffff35}
+.overlay{position:fixed;inset:0;background:#08091bdc;display:flex;align-items:center;justify-content:center;padding:20px;z-index:5}.modal{max-width:420px;background:#28234b;border:2px solid #ffe477;border-radius:22px;padding:25px;box-shadow:0 0 50px #ffce4b33}.modal h2{color:#ffe477;font-size:30px;margin:0 0 8px}.modal button{background:#ffe477;color:#302449;border:0;border-radius:12px;padding:13px 22px;font-weight:900;font-size:16px;cursor:pointer}
+@media(max-width:420px){.customer{width:calc(50% - 8px);min-height:120px}.restaurant{padding:10px}}
+</style>
+</head>
+<body>
+<h1>🍔 SNACK RUSH!</h1>
+<p class="sub">Read the orders, serve the right snacks, and beat the clock!</p>
+<div class="hud"><span>⏱ TIME: <b id="time">60</b>s</span><span>⭐ SCORE: <b id="score">0</b></span><span>😊 SERVED: <b id="served">0</b></span></div>
+<div class="restaurant">
+ <div class="customers" id="customers"></div>
+ <div id="status">Ready to open your restaurant?</div>
+ <div class="foodtitle">🍽️ TAP THE FOOD TO SERVE IT</div>
+ <div class="foods" id="foods"></div>
+</div>
+<div class="actions"><button id="start">START SNACK RUSH</button><button class="secondary" onclick="location.href='index.html'">ARCADE HOME</button></div>
+<div class="overlay" id="intro"><div class="modal"><h2>🍟 Snack Rush!</h2><p>Customers will reveal their orders one at a time. Tap the matching food before they run out of patience. You have 60 seconds!</p><p>Every correct order earns points. The rush gets faster as your score grows.</p><button id="play">LET'S COOK!</button></div></div>
+<script>
+const menu=[
+ {id:'burger',name:'Burger',emoji:'🍔'},{id:'pizza',name:'Pizza',emoji:'🍕'},
+ {id:'fries',name:'Fries',emoji:'🍟'},{id:'icecream',name:'Ice cream',emoji:'🍦'},
+ {id:'sushi',name:'Sushi',emoji:'🍣'},{id:'donut',name:'Donut',emoji:'🍩'},
+ {id:'taco',name:'Taco',emoji:'🌮'},{id:'cake',name:'Cake',emoji:'🍰'}
+];
+const guests=[{face:'🐻',name:'Benny'},{face:'🐱',name:'Mimi'},{face:'🐸',name:'Froggy'},{face:'🐼',name:'Panda'},{face:'🐵',name:'Momo'},{face:'🦊',name:'Foxy'}];
+const customersEl=document.querySelector('#customers'),foodsEl=document.querySelector('#foods'),statusEl=document.querySelector('#status');
+let orders=[],score=0,served=0,time=60,active=false,tick=null,spawn=null,serial=0;
+function makeFoodButtons(){foodsEl.innerHTML='';menu.forEach(f=>{const b=document.createElement('button');b.className='food';b.innerHTML=f.emoji+'<b>'+f.name+'</b>';b.onclick=()=>serve(f.id);foodsEl.appendChild(b);});}
+function addCustomer(){
+ if(!active||orders.length>=4)return;
+ const guest=guests[Math.floor(Math.random()*guests.length)],food=menu[Math.floor(Math.random()*menu.length)];
+ const order={id:++serial,guest,food,patience:100,reveal:0};orders.push(order);render();
+}
+function render(){
+ customersEl.innerHTML='';
+ if(!orders.length){customersEl.innerHTML='<p style="align-self:center;color:#c9c1e8">New customers are on their way…</p>';return;}
+ orders.forEach(o=>{
+  const card=document.createElement('div');card.className='customer';
+  const revealed=o.reveal>=1;
+  card.innerHTML='<div class="face">'+o.guest.face+'</div><div class="name">'+o.guest.name+'</div><div class="bubble">'+(revealed?o.food.emoji:'<small>🤔 thinking…</small>')+'</div><div class="waiting">'+(revealed?o.food.name+' please!':'Order arriving…')+'</div><div class="bar"><i style="width:'+o.patience+'%;background:'+(o.patience<35?'#ff718e':'#75f0c3')+'"></i></div>';
+  customersEl.appendChild(card);
+ });
+}
+function serve(id){
+ if(!active)return;
+ const index=orders.findIndex(o=>o.reveal>=1&&o.food.id===id);
+ if(index<0){statusEl.textContent='Not quite! Look at the revealed orders. 👀';return;}
+ orders.splice(index,1);score+=10+Math.max(0,Math.floor(time/10));served++;
+ document.querySelector('#score').textContent=score;document.querySelector('#served').textContent=served;
+ statusEl.textContent='Perfect delivery! +'+(10+Math.max(0,Math.floor(time/10)))+' points! ✨';render();
+}
+function endGame(){
+ active=false;clearInterval(tick);clearInterval(spawn);
+ document.querySelector('#intro').style.display='flex';
+ document.querySelector('#intro .modal').innerHTML='<h2>'+(time===0?'⏰ Time is up!':'🍽️ Shift complete!')+'</h2><p>You served <b>'+served+'</b> customers and earned <b>'+score+'</b> points!</p><p>'+(served>=12?'Amazing restaurant skills! 🌟':served>=5?'Nice work, chef! 👏':'Keep practicing, chef! 💪')+'</p><button id="again">PLAY AGAIN</button>';
+ document.querySelector('#again').onclick=()=>{document.querySelector('#intro').style.display='none';startGame();};
+}
+function startGame(){
+ clearInterval(tick);clearInterval(spawn);orders=[];score=0;served=0;time=60;active=true;serial=0;
+ document.querySelector('#score').textContent='0';document.querySelector('#served').textContent='0';document.querySelector('#time').textContent='60';
+ statusEl.textContent='The restaurant is open! Take those orders!';document.querySelector('#intro').style.display='none';render();addCustomer();
+ tick=setInterval(()=>{
+  time--;document.querySelector('#time').textContent=time;
+  const speed=Math.min(1.5,0.55+score/250);
+  orders.forEach(o=>{o.patience-=speed;if(o.reveal<1){o.reveal+=0.18;}});
+  const lost=orders.findIndex(o=>o.patience<=0);
+  if(lost>=0){orders.splice(lost,1);statusEl.textContent='A customer left before being served! 😮';}
+  render();if(time<=0)endGame();
+ },500);
+ spawn=setInterval(()=>{if(active)addCustomer();},Math.max(1700,4200-score*5));
+}
+document.querySelector('#play').onclick=startGame;
+document.querySelector('#start').onclick=startGame;
+makeFoodButtons();render();
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maze Muncher | Nexus Arcade</title>
+<style>
+:root{--bg:#090d1d;--panel:#151d36;--cyan:#57f5e8;--pink:#ff579b;--gold:#ffe36e}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% 0,#25265a,var(--bg) 65%);color:#f5f7ff;font-family:system-ui,Arial,sans-serif;text-align:center;padding:22px}
+h1{font-size:clamp(2rem,7vw,3.4rem);margin:8px 0;color:var(--gold);text-shadow:0 0 22px #ffe36e66;letter-spacing:2px}
+p{color:#c2c9e6}.hud{display:flex;justify-content:center;gap:22px;flex-wrap:wrap;font-weight:800;margin:14px auto}.hud span{background:#ffffff12;border:1px solid #ffffff20;padding:9px 15px;border-radius:12px}
+#board{display:grid;grid-template-columns:repeat(15,min(5.2vw,30px));grid-template-rows:repeat(13,min(5.2vw,30px));gap:2px;justify-content:center;margin:18px auto;padding:10px;background:#0b1024;border:2px solid #5363c9;border-radius:16px;box-shadow:0 0 35px #6677ff25;max-width:max-content}
+.cell{width:min(5.2vw,30px);height:min(5.2vw,30px);border-radius:5px;display:grid;place-items:center;background:#111a35;font-size:clamp(10px,2.5vw,18px)}
+.wall{background:linear-gradient(135deg,#4655bf,#242d72);box-shadow:inset 0 0 6px #a4b5ff55}.dot:after{content:"";width:5px;height:5px;border-radius:50%;background:#ffeaa1;box-shadow:0 0 6px #ffeaa1}
+.player{color:#ffe36e;text-shadow:0 0 10px #ffe36e;font-size:22px}.enemy{font-size:19px;filter:drop-shadow(0 0 5px #ff579b)}
+.controls{display:grid;grid-template-columns:repeat(3,54px);gap:7px;justify-content:center;margin:16px auto}.controls button,.actions button{border:1px solid #ffffff30;background:#222d54;color:white;border-radius:12px;padding:12px;font-size:20px;font-weight:800;touch-action:manipulation}.controls button:active,.actions button:active{background:#5363c9}
+.actions button{font-size:15px;padding:10px 16px;color:var(--cyan)}#message{min-height:26px;font-weight:800;color:var(--cyan)}
+small{color:#8994bd}
+</style>
+</head>
+<body>
+<h1>🟡 MAZE MUNCHER</h1>
+<p>Eat every dot. Avoid the chasers. Clear the maze to win!</p>
+<div class="hud"><span>DOTS: <b id="score">0</b>/<b id="total">0</b></span><span>HEARTS: <b id="lives">3</b></span></div>
+<div id="board" role="img" aria-label="Maze game board"></div>
+<div id="message">Use the arrow keys or buttons to move.</div>
+<div class="controls" aria-label="Touch controls">
+ <span></span><button data-dir="up" aria-label="Up">▲</button><span></span>
+ <button data-dir="left" aria-label="Left">◀</button><button data-dir="down" aria-label="Down">▼</button><button data-dir="right" aria-label="Right">▶</button>
+</div>
+<div class="actions"><button id="restart">RESTART GAME</button> <button id="home" onclick="location.href='index.html'">ARCADE HOME</button></div>
+<small>Tip: The chasers move after you do. Plan your route!</small>
+<script>
+const layout=[
+"###############",
+"#.....#.......#",
+"#.###.#.###.#.#",
+"#...#...#...#.#",
+"###.#####.###.#",
+"#...#...#.....#",
+"#.#.#.#.#.###.#",
+"#.#...#...#...#",
+"#.#####.###.#.#",
+"#.....#.....#.#",
+"#.###.#.###.#.#",
+"#.............#",
+"###############"
+];
+const board=document.querySelector('#board'),scoreEl=document.querySelector('#score'),totalEl=document.querySelector('#total'),livesEl=document.querySelector('#lives'),message=document.querySelector('#message');
+let map,player,ghosts,score,lives,remaining,ended=false,turn=0;
+const dirs={up:[-1,0],down:[1,0],left:[0,-1],right:[0,1]};
+function reset(){
+ map=layout.map(row=>row.split(''));player={r:1,c:1};ghosts=[{r:5,c:7,icon:'👾'},{r:9,c:11,icon:'👻'}];score=0;lives=3;ended=false;turn=0;
+ remaining=map.flat().filter(x=>x==='.').length;totalEl.textContent=remaining;message.textContent='Use the arrow keys or buttons to move.';draw();
+}
+function draw(){
+ board.innerHTML='';
+ for(let r=0;r<map.length;r++)for(let c=0;c<map[r].length;c++){
+  const el=document.createElement('div');el.className='cell';
+  if(map[r][c]==='#')el.classList.add('wall');else if(map[r][c]==='.')el.classList.add('dot');
+  if(ghosts.some(g=>g.r===r&&g.c===c)){el.classList.add('enemy');el.textContent=ghosts.find(g=>g.r===r&&g.c===c).icon;}
+  if(player.r===r&&player.c===c){el.className='cell player';el.textContent='●';}
+  board.appendChild(el);
+ }
+ scoreEl.textContent=score;livesEl.textContent=lives;
+}
+function walkable(r,c){return map[r]&&map[r][c]&&map[r][c]!=='#';}
+function move(dir){
+ if(ended)return;const [dr,dc]=dirs[dir];const nr=player.r+dr,nc=player.c+dc;if(!walkable(nr,nc))return;
+ player={r:nr,c:nc};if(map[nr][nc]==='.'){map[nr][nc]=' ';score++;remaining--;if(remaining===0){ended=true;message.textContent='🏆 YOU WIN! The whole maze is cleared!';}}
+ turn++;if(!ended)moveGhosts();checkHit();draw();
+}
+function moveGhosts(){
+ ghosts.forEach((g,i)=>{
+  const opts=Object.entries(dirs).map(([name,[dr,dc]])=>({r:g.r+dr,c:g.c+dc})).filter(p=>walkable(p.r,p.c));
+  if(!opts.length)return;
+  opts.sort((a,b)=>Math.abs(a.r-player.r)+Math.abs(a.c-player.c)-(Math.abs(b.r-player.r)+Math.abs(b.c-player.c)));
+  const choice=(turn%5===0&&opts.length>1)?opts[opts.length-1]:opts[0];g.r=choice.r;g.c=choice.c;
+ });
+}
+function checkHit(){
+ if(ghosts.some(g=>g.r===player.r&&g.c===player.c)){
+  lives--;livesEl.textContent=lives;
+  if(lives<=0){ended=true;message.textContent='Game over! Press RESTART GAME to try again.';}
+  else{player={r:1,c:1};ghosts=[{r:5,c:7,icon:'👾'},{r:9,c:11,icon:'👻'}];message.textContent='Ouch! You lost a heart. Keep going!';}
+ }
+}
+document.addEventListener('keydown',e=>{const key={ArrowUp:'up',w:'up',ArrowDown:'down',s:'down',ArrowLeft:'left',a:'left',ArrowRight:'right',d:'right'}[e.key];if(key){e.preventDefault();move(key);}});
+document.querySelectorAll('[data-dir]').forEach(b=>{b.addEventListener('click',()=>move(b.dataset.dir));b.addEventListener('touchstart',e=>{e.preventDefault();move(b.dataset.dir);},{passive:false});});
+document.querySelector('#restart').onclick=reset;reset();
+</script>
+</body>
+</html>

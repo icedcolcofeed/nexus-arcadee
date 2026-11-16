@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Wobble Royale — Nexus Arcade</title>
+<style>
+:root{--ink:#172044;--pink:#ff4f9a;--cyan:#43d9e8;--yellow:#ffe36e}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#171a46,#34206c 55%,#152f60);color:white;font-family:system-ui,Segoe UI,sans-serif;min-height:100vh;display:grid;place-items:center;padding:14px}
+.wrap{width:min(960px,100%);text-align:center}.top{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin:0 auto 10px;max-width:800px}
+h1{font-size:clamp(26px,5vw,42px);margin:0;letter-spacing:1px;text-shadow:0 4px 0 #15153b}.sub{opacity:.85;font-size:14px}
+.hud{display:flex;gap:10px;align-items:center;font-weight:800}.pill{background:#ffffff1c;border:1px solid #ffffff3a;border-radius:999px;padding:8px 13px}
+.stage{position:relative;margin:auto;width:min(800px,100%);aspect-ratio:16/10;border:4px solid #ffffff40;border-radius:22px;overflow:hidden;box-shadow:0 18px 55px #07092299;background:#82dff0}
+canvas{display:block;width:100%;height:100%;touch-action:none}
+.overlay{position:absolute;inset:0;display:grid;place-items:center;background:#10143bbd;padding:20px}
+.panel{max-width:440px;background:#211e55ed;border:2px solid #ffffff50;border-radius:22px;padding:24px;box-shadow:0 12px 30px #090b2c80}
+.panel h2{margin:0 0 8px;font-size:30px}.panel p{line-height:1.5;margin:8px 0 16px}
+button{border:0;border-radius:999px;background:linear-gradient(90deg,#ff4f9a,#ff9a57);color:white;font-weight:900;font-size:17px;padding:12px 24px;cursor:pointer;box-shadow:0 5px 0 #9b316c}
+button:active{transform:translateY(3px);box-shadow:0 2px 0 #9b316c}
+.controls{display:flex;justify-content:center;gap:12px;align-items:center;margin:12px auto 0;flex-wrap:wrap}
+.pad{display:grid;grid-template-columns:repeat(3,48px);grid-template-rows:repeat(2,42px);gap:5px}
+.pad button{padding:0;font-size:19px;box-shadow:0 3px 0 #30336c;background:#ffffff24;border:1px solid #ffffff55}
+.pad .up{grid-column:2}.pad .left{grid-column:1;grid-row:2}.pad .down{grid-column:2;grid-row:2}.pad .right{grid-column:3;grid-row:2}
+.hint{font-size:13px;opacity:.8;max-width:360px}
+@media(min-width:700px){.pad{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="top"><div><h1>🫘 WOBBLE ROYALE</h1><div class="sub">A tiny, wobbly obstacle-course showdown</div></div><div class="hud"><span class="pill" id="time">Time: 0.0s</span><span class="pill" id="round">Round 1</span></div></div>
+ <div class="stage"><canvas id="game" width="800" height="500" aria-label="Wobble Royale game"></canvas>
+  <div class="overlay" id="overlay"><div class="panel"><h2 id="headline">Ready, bean?</h2><p id="message">Race to the golden finish gate. Dodge the spinning bumpers and moving blocks. You have 60 seconds!</p><button id="start">START RUN</button></div></div>
+ </div>
+ <div class="controls"><div class="pad" aria-label="Touch controls"><button class="up" data-dir="up">▲</button><button class="left" data-dir="left">◀</button><button class="down" data-dir="down">▼</button><button class="right" data-dir="right">▶</button></div><div class="hint">Move with WASD or arrow keys. On phones, use the arrows. Reach the glowing finish gate before time runs out!</div></div>
+</div>
+<script>
+(()=> {
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d'),overlay=document.getElementById('overlay');
+const timeEl=document.getElementById('time'),roundEl=document.getElementById('round');
+const W=800,H=500,keys={},held={up:false,down:false,left:false,right:false};
+let player,started=false,won=false,lost=false,startAt=0,elapsed=0,raf=0,round=1,bumperAngle=0;
+const obstacles=[
+ {x:180,y:120,w:26,h:190,vx:0,vy:2.5,min:95,max:315,axis:'y',color:'#ff5d9e'},
+ {x:360,y:250,w:150,h:24,vx:2.8,vy:0,min:280,max:500,axis:'x',color:'#ffbd4a'},
+ {x:600,y:95,w:25,h:180,vx:0,vy:3,min:70,max:260,axis:'y',color:'#a58aff'},
+ {x:510,y:360,w:150,h:22,vx:-2.4,vy:0,min:430,max:660,axis:'x',color:'#ff5d9e'}
+];
+function reset(){player={x:55,y:250,r:17,speed:3.5,stun:0};elapsed=0;won=false;lost=false;bumperAngle=0;obstacles[0].y=120;obstacles[1].x=360;obstacles[2].y=95;obstacles[3].x=510;}
+function start(){reset();started=true;startAt=performance.now();overlay.style.display='none';cancelAnimationFrame(raf);loop();}
+function finish(success){started=false;won=success;lost=!success;overlay.style.display='grid';document.getElementById('headline').textContent=success?'🏆 YOU QUALIFIED!':'TIME UP!';document.getElementById('message').textContent=success?`Amazing run! You finished in ${elapsed.toFixed(1)} seconds.`:'The course got you this time. Try again and watch the moving obstacles!';document.getElementById('start').textContent='PLAY AGAIN';}
+function rounded(x,y,w,h,r,color){ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x,y,w,h,r);ctx.fill();}
+function draw(){
+ ctx.clearRect(0,0,W,H);
+ // sky and course
+ let g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#79e3ee');g.addColorStop(1,'#b5f5d8');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ // side rails and lanes
+ rounded(20,38,760,424,25,'#f6f0ff');rounded(32,50,736,400,19,'#6f80d9');
+ for(let i=0;i<8;i++){ctx.fillStyle=i%2?'#788be5':'#8395ee';ctx.fillRect(40+i*90,58,4,384)}
+ // start strip
+ rounded(40,205,38,90,8,'#ffe36e');ctx.fillStyle='#684b8f';ctx.font='bold 12px system-ui';ctx.fillText('GO!',44,253);
+ // finish gate
+ ctx.shadowColor='#fff06a';ctx.shadowBlur=22;rounded(718,170,34,160,9,'#ffe36e');ctx.shadowBlur=0;
+ ctx.fillStyle='#fff';ctx.fillRect(724,180,22,140);for(let i=0;i<7;i++){ctx.fillStyle=i%2?'#ff5d9e':'#fff';ctx.fillRect(724,180+i*20,22,10)}
+ ctx.fillStyle='#3b3474';ctx.font='bold 15px system-ui';ctx.fillText('FINISH',690,155);
+ // bumpers
+ bumperAngle+=.035;
+ for(let i=0;i<3;i++){let x=[285,545,665][i],y=[95,370,245][i],a=bumperAngle*(i%2?-.9:1)+i;
+  ctx.save();ctx.translate(x,y);ctx.rotate(a);for(let j=0;j<4;j++){ctx.rotate(Math.PI/2);rounded(-9,-38,18,76,9,i%2?'#ff8c58':'#ff4f9a')}ctx.restore();
+  ctx.beginPath();ctx.arc(x,y,17,0,Math.PI*2);ctx.fillStyle='#ffe36e';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=3;ctx.stroke();
+ }
+ // moving blocks
+ for(const o of obstacles){rounded(o.x,o.y,o.w,o.h,9,o.color);ctx.fillStyle='#ffffff55';ctx.fillRect(o.x+5,o.y+4,o.w-10,5)}
+ // player bean
+ if(player){ctx.save();ctx.translate(player.x,player.y);ctx.rotate(Math.sin(performance.now()/100)*.08);
+  ctx.shadowColor='#31245f';ctx.shadowBlur=7;ctx.fillStyle='#ffdf67';ctx.beginPath();ctx.ellipse(0,0,15,19,0,0,Math.PI*2);ctx.fill();ctx.shadowBlur=0;
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(-5,-4,4,0,Math.PI*2);ctx.arc(5,-4,4,0,Math.PI*2);ctx.fill();ctx.fillStyle='#28244e';ctx.beginPath();ctx.arc(-4,-3,2,0,Math.PI*2);ctx.arc(6,-3,2,0,Math.PI*2);ctx.fill();ctx.restore();}
+ // time bar
+ rounded(260,18,280,10,5,'#ffffff80');rounded(260,18,280*Math.max(0,1-elapsed/60),10,5,'#ffe36e');
+}
+function circleRect(cx,cy,r,o){let x=Math.max(o.x,Math.min(cx,o.x+o.w)),y=Math.max(o.y,Math.min(cy,o.y+o.h));return (cx-x)**2+(cy-y)**2<r*r}
+function update(dt){
+ elapsed=(performance.now()-startAt)/1000;timeEl.textContent='Time: '+elapsed.toFixed(1)+'s';
+ let dx=0,dy=0;if(keys.ArrowLeft||keys.a||held.left)dx--;if(keys.ArrowRight||keys.d||held.right)dx++;if(keys.ArrowUp||keys.w||held.up)dy--;if(keys.ArrowDown||keys.s||held.down)dy++;
+ if(dx&&dy){dx*=.707;dy*=.707}
+ player.x=Math.max(48,Math.min(752,player.x+dx*player.speed));player.y=Math.max(65,Math.min(435,player.y+dy*player.speed));
+ for(const o of obstacles){if(o.axis==='y'){o.y+=o.vy;if(o.y<o.min||o.y>o.max)o.vy*=-1}else{o.x+=o.vx;if(o.x<o.min||o.x>o.max)o.vx*=-1}}
+ for(const o of obstacles){if(circleRect(player.x,player.y,player.r,o)){player.x-=dx*player.speed*2.5;player.y-=dy*player.speed*2.5;}}
+ // bumpers gently bounce player away
+ for(const [x,y] of [[285,95],[545,370],[665,245]]){let d=Math.hypot(player.x-x,player.y-y);if(d<34){let a=Math.atan2(player.y-y,player.x-x);player.x=x+Math.cos(a)*35;player.y=y+Math.sin(a)*35;}}
+ if(player.x>710&&player.y>165&&player.y<335){finish(true);return}
+ if(elapsed>=60){finish(false);return}
+}
+function loop(){if(!started)return;update();draw();raf=requestAnimationFrame(loop)}
+document.getElementById('start').addEventListener('click',start);
+window.addEventListener('keydown',e=>{if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key))e.preventDefault();keys[e.key]=true;if(!started&&e.key==='Enter')start()});
+window.addEventListener('keyup',e=>keys[e.key]=false);
+document.querySelectorAll('[data-dir]').forEach(b=>{let d=b.dataset.dir;b.addEventListener('pointerdown',e=>{e.preventDefault();held[d]=true});['pointerup','pointercancel','pointerleave'].forEach(ev=>b.addEventListener(ev,()=>held[d]=false))});
+reset();draw();
+})();
+</script>
+</body>
+</html>
