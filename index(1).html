@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEXUS ARCADE — Game Library</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--bg:#090b18;--panel:#14182b;--muted:#9ca5c7;--cyan:#54f4e8;--pink:#ff4f9a;--purple:#9b7bff}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 10%,#25204c 0,transparent 32%),radial-gradient(circle at 90% 80%,#122f45 0,transparent 30%),var(--bg);color:#f5f7ff;font-family:Inter, sans-serif}
+button{font:inherit;cursor:pointer;border:0}.hidden{display:none!important}
+#gate{min-height:100vh;display:grid;place-items:center;padding:24px}.login{width:min(440px,100%);padding:38px;border:1px solid #ffffff20;border-radius:26px;background:#111529eF;box-shadow:0 25px 90px #0009;text-align:center}
+.logo{font:900 clamp(2rem,7vw,3rem) Orbitron,sans-serif;letter-spacing:2px;margin:0;background:linear-gradient(90deg,var(--cyan),#fff,var(--pink));color:transparent;background-clip:text}
+.kicker{color:var(--muted);letter-spacing:4px;font-size:.7rem;margin:12px 0 30px}.login h2{font-size:1.2rem}.login p{color:var(--muted);font-size:.9rem}
+input{width:100%;padding:16px;border:1px solid #ffffff26;border-radius:12px;background:#090d1d;color:white;text-align:center;font-size:1.25rem;letter-spacing:8px;outline:none;margin:14px 0}
+input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px #54f4e822}
+.primary{padding:14px 22px;border-radius:12px;background:linear-gradient(100deg,var(--cyan),#8cfff2);color:#07151a;font-weight:800;width:100%;box-shadow:0 8px 28px #54f4e833}
+#error{color:#ff7da9;min-height:20px;font-size:.85rem}
+#app{max-width:1100px;margin:auto;padding:30px 22px 60px}.top{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-bottom:1px solid #ffffff18;padding:12px 0 24px}
+.brand{font:700 1.2rem Orbitron,sans-serif;color:var(--cyan)}.tag{color:var(--muted);font-size:.85rem}.logout{background:#ffffff12;color:white;border:1px solid #ffffff20;border-radius:10px;padding:10px 14px}
+.hero{padding:48px 0 28px}.hero h1{font:900 clamp(2rem,6vw,3.6rem) Orbitron,sans-serif;margin:0 0 12px}.hero h1 span{color:var(--pink)}.hero p{color:var(--muted);max-width:600px;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}.game{background:linear-gradient(145deg,#1a2038,#111529);border:1px solid #ffffff18;border-radius:18px;padding:22px;transition:.2s}.game:hover{transform:translateY(-4px);border-color:#54f4e866}.emoji{font-size:2.2rem}.game h3{margin:12px 0 6px}.game p{color:var(--muted);font-size:.88rem;min-height:38px}.play{background:#ffffff12;color:var(--cyan);border:1px solid #54f4e855;border-radius:10px;padding:10px 14px;font-weight:700}
+#playarea{margin-top:24px;padding:24px;border:1px solid #ffffff20;border-radius:20px;background:#111529;min-height:190px}#playarea h2{font-family:Orbitron,sans-serif}.game-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.game-actions button{padding:10px 14px;border-radius:9px;background:#252d4a;color:white}.game-actions button:hover{background:#354269}.result{font-weight:700;color:var(--cyan);margin-top:14px}
+.memory-grid{display:grid;grid-template-columns:repeat(4,minmax(50px,80px));gap:9px;margin-top:16px}.memory-grid button{height:70px;font-size:1.5rem;border-radius:10px;background:#252d4a;color:white}
+footer{text-align:center;color:#737d9f;font-size:.8rem;margin-top:48px}
+</style>
+</head>
+<body>
+<section id="gate">
+ <div class="login">
+  <div class="logo">NEXUS ARCADE</div><div class="kicker">YOUR GAME ZONE</div>
+  <h2>PLAYER ACCESS</h2><p>Enter the access code to unlock the arcade.</p>
+  <form id="loginForm"><input id="pass" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Type 7245 here" aria-label="Password" autocomplete="off"><button class="primary">UNLOCK ARCADE ↗</button></form>
+  <div id="error" aria-live="polite"></div>
+ </div>
+</section>
+<main id="app" class="hidden">
+ <header class="top"><div><div class="brand">✦ NEXUS ARCADE</div><div class="tag">PLAYER LOBBY / ACCESS GRANTED</div></div><button class="logout" id="logout">Lock portal ↗</button></header>
+ <section class="hero"><h1>Pick your <span>game.</span></h1><p>Welcome to Nexus Arcade! Pick a game, challenge your friends, and have fun.</p></section>
+ <section class="grid">
+  <article class="game"><div class="emoji">🧠</div><h3>Memory Match</h3><p>Flip cards and find all the matching pairs.</p><button class="play" data-game="memory">PLAY NOW →</button></article>
+  <article class="game"><div class="emoji">🎯</div><h3>Number Guess</h3><p>Can you guess the secret number in fewer tries?</p><button class="play" data-game="guess">PLAY NOW →</button></article>
+  <article class="game"><div class="emoji">⚡</div><h3>Reaction Test</h3><p>Wait for green, then click as fast as you can.</p><button class="play" data-game="reaction">PLAY NOW →</button></article>
+  <article class="game"><div class="emoji">✊</div><h3>Rock Paper Scissors</h3><p>Take on the arcade in a classic showdown.</p><button class="play" data-game="rps">PLAY NOW →</button></article>
+  <article class="game"><div class="emoji">🏃</div><h3>NEON DASH</h3><p>Run through the city, dodge obstacles, and collect coins.</p><a class="play" href="nexus_runner.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">PLAY NOW →</a></article>
+  <article class="game"><div class="emoji">🫘</div><h3>WOBBLE ROYALE</h3><p>Dodge spinning bumpers and moving blocks. Reach the finish before time runs out!</p><a class="play" href="wobble_royale.html" target="_blank" rel="noopener" style="display:inline-block;text-decoration:none">PLAY NOW →</a></article>
+ </section>
+ <section id="playarea"><h2>ARCADE READY</h2><p class="tag">Choose a game above to start playing.</p></section>
+ <section id="addgame" style="margin-top:22px;padding:22px;border:1px solid #ffffff20;border-radius:18px;background:#111529">
+  <h2 style="margin-top:0">➕ Add a game for everyone</h2>
+  <p style="color:var(--muted);line-height:1.6">To make a game appear for every visitor, add its HTML file to this GitHub repository. A browser-only upload button cannot publish files to GitHub.</p>
+  <ol style="color:var(--muted);line-height:1.8;padding-left:22px">
+   <li>Open your <b style="color:white">nexus-arcade</b> repository on GitHub.</li>
+   <li>Choose <b style="color:white">Add file → Upload files</b>.</li>
+   <li>Upload the new game's <b style="color:white">.html</b> file into the main folder (the same folder as index.html).</li>
+   <li>Click <b style="color:white">Commit changes</b>.</li>
+   <li>Open <b style="color:white">index.html</b> on GitHub, click the pencil to edit, and copy a game card pattern from the README, changing its title and filename.</li>
+   <li>Commit that change. After GitHub Pages updates, everyone can see the new game.</li>
+  </ol>
+  <p style="color:var(--muted);font-size:.85rem">Tip: Keep each game and its supporting image/audio files together in the repository. If a game uses folders, upload those folders too.</p>
+ </section>
+ <footer>NEXUS ARCADE · BUILT FOR FUN · GAME ON</footer>
+</main>
+<script>
+const gate=document.querySelector('#gate'),app=document.querySelector('#app'),area=document.querySelector('#playarea');
+document.querySelector('#pass').focus();
+document.querySelector('#loginForm').addEventListener('submit',e=>{e.preventDefault();if(document.querySelector('#pass').value==='7245'){gate.classList.add('hidden');app.classList.remove('hidden');document.querySelector('#error').textContent='';}else{document.querySelector('#error').textContent='Incorrect code. Try again.';document.querySelector('#pass').select();}});
+document.querySelector('#logout').onclick=()=>{app.classList.add('hidden');gate.classList.remove('hidden');document.querySelector('#pass').value='';};
+document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>games[b.dataset.game]());
+const games={
+ guess(){let n=Math.floor(Math.random()*100)+1,tries=0;area.innerHTML=`<h2>🎯 NUMBER GUESS</h2><p>I'm thinking of a number from 1 to 100.</p><div class="game-actions"><input id="guessInput" type="number" min="1" max="100" placeholder="Your guess" style="max-width:180px;letter-spacing:1px;margin:0"><button id="guessBtn">GUESS</button></div><div id="guessResult" class="result"></div>`;document.querySelector('#guessBtn').onclick=()=>{let v=Number(document.querySelector('#guessInput').value),r=document.querySelector('#guessResult');if(!v||v<1||v>100){r.textContent='Enter a number from 1 to 100.';return}tries++;r.textContent=v===n?`🎉 You got it in ${tries} ${tries===1?'try':'tries'}! Refresh the game to play again.`:v<n?'Too low — go higher!':'Too high — go lower!';};},
+ rps(){area.innerHTML=`<h2>✊ ROCK PAPER SCISSORS</h2><p>Make your move.</p><div class="game-actions">${['Rock','Paper','Scissors'].map(x=>`<button data-move="${x}">${x}</button>`).join('')}</div><div id="rpsResult" class="result"></div>`;document.querySelectorAll('[data-move]').forEach(b=>b.onclick=()=>{let a=b.dataset.move,c=['Rock','Paper','Scissors'][Math.floor(Math.random()*3)],win=a===c?'It’s a tie!':(a==='Rock'&&c==='Scissors')||(a==='Paper'&&c==='Rock')||(a==='Scissors'&&c==='Paper')?'You win! 🎉':'Arcade wins!';document.querySelector('#rpsResult').textContent=`You: ${a} · Arcade: ${c} — ${win}`;});},
+ reaction(){let ready=false,start=0,timer;area.innerHTML=`<h2>⚡ REACTION TEST</h2><p>Press start, wait for the panel to turn green, then click it as fast as possible.</p><button id="react" class="primary" style="max-width:300px;background:#ff4f9a;color:white">START TEST</button><div id="reactResult" class="result"></div>`;let b=document.querySelector('#react');b.onclick=()=>{if(!ready){clearTimeout(timer);ready=false;b.textContent='WAIT FOR GREEN…';b.style.background='#d58b35';b.disabled=true;timer=setTimeout(()=>{ready=true;start=performance.now();b.disabled=false;b.textContent='CLICK NOW!';b.style.background='#20b77a';},1000+Math.random()*3500);}else{let ms=Math.round(performance.now()-start);ready=false;b.textContent='TRY AGAIN';b.style.background='#ff4f9a';document.querySelector('#reactResult').textContent=`Your reaction time: ${ms} ms`;}};},
+ memory(){let icons=['🚀','🎮','👾','💎','🌙','⚡','🛸','🔥'],deck=[...icons,...icons].sort(()=>Math.random()-.5),open=[],matched=0,moves=0;area.innerHTML=`<h2>🧠 MEMORY MATCH</h2><p>Find all 8 pairs. Moves: <b id="moves">0</b></p><div class="memory-grid">${deck.map((x,i)=>`<button data-card="${i}" aria-label="Hidden card">?</button>`).join('')}</div><div id="memoryResult" class="result"></div>`;document.querySelectorAll('[data-card]').forEach(b=>b.onclick=()=>{if(b.disabled||open.length===2)return;let i=+b.dataset.card;b.textContent=deck[i];b.disabled=true;open.push({b,i});if(open.length===2){moves++;document.querySelector('#moves').textContent=moves;if(deck[open[0].i]===deck[open[1].i]){matched+=2;open=[];if(matched===16)document.querySelector('#memoryResult').textContent=`🏆 Perfect! You matched every pair in ${moves} moves.`;}else{let pair=open;setTimeout(()=>{pair.forEach(o=>{o.b.textContent='?';o.b.disabled=false});open=[];},750);}}});}
+};
+</script>
+</body></html>
